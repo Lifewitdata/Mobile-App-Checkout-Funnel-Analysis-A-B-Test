@@ -134,7 +134,7 @@ cohort = orders_m.groupby('weeks_since_first')['user_id'].nunique()
 pip install pandas numpy matplotlib scipy
 
 # Run analysis
-python3 kaufland_project_analysis.py
+python3 project_analysis.py
 ```
 
 Place all 4 CSV files in the same directory as the script before running.
@@ -147,4 +147,4 @@ Place all 4 CSV files in the same directory as the script before running.
 
 ---
 
-*Project built as part of Data Analyst portfolio — Weblays Technologies client work (Kaufland International)*
+*Project built as part of Data Analyst portfolio 
