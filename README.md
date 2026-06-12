@@ -1,150 +1,173 @@
-# Mobile-App-Checkout-Funnel-Analysis-A-B-Test
-> **Portfolio Project | Data Analyst 
-> Tools: Python · Pandas · NumPy · Matplotlib · SciPy  
-> Dataset: International Marketplace 
+# 🛒 A/B Test Analysis — Simplified Checkout
+
+> **Did reducing checkout from 5 steps to 2 steps improve purchase conversion?**  
+> A full end-to-end product analytics case study using real funnel, order, and user data.
 
 ---
 
-## Project overview
+## 📌 Overview
 
-operates international online marketplaces where thousands of third-party retailers sell alongside  own products. As the embedded data analyst, I was tasked with identifying why users were dropping off during the mobile app checkout flow and validating whether a simplified checkout design would improve conversion.
+This project contains a complete A/B test analysis conducted for a fast-growing mobile e-commerce app. The Product team hypothesised that a 5-step checkout flow was creating unnecessary friction — especially on mobile. A simplified 2-step variant was tested against the standard flow across five Central & Eastern European markets.
 
-This project covers end-to-end funnel analysis, device and country segmentation, A/B test design and statistical significance testing, and post-purchase cohort retention analysis.
-
----
-
-## Business problem
-
-The product team observed declining checkout completion rates on the mobile app but lacked visibility into **where** users were dropping off and **why**. Key questions:
-
-- Which funnel stage has the highest drop-off rate?
-- Does conversion differ by device (Android vs iOS) or country?
-- Does a simplified 2-step checkout outperform the existing 5-step flow?
-- How does repeat purchase behaviour look in the 6 weeks post-purchase?
+**Markets:** DE, PL, CZ, SK, RO  
+**Sample size:** ~4,400 users per group  
+**Primary metric:** Purchase Conversion Rate (CVR)
 
 ---
 
-## Dataset
+## 📊 Key Results
 
-| File | Rows | Description |
-|------|------|-------------|
-| `users.csv` | 5,000 | User profiles — country, device, age group, registration date |
-| `funnel_events.csv` | 49,756 | Session-level funnel events across 6 stages |
-| `orders.csv` | 3,310 | Completed orders with GMV, category, A/B group |
-| `ab_test_config.csv` | 2 | A/B test variant definitions |
+| Metric | Control (5-step) | Variant (2-step) | Change | Significant? |
+|---|---|---|---|---|
+| Purchase CVR | 28.9% | 36.3% | **+25.8% lift** | ✅ p < 0.001 |
+| Revenue per User | €50.82 | €65.04 | **+28.0%** | — |
+| Average Order Value | €156.24 | €152.48 | -2.4% | ✗ n.s. |
+| Return Rate | 15.2% | 14.9% | -0.3pp | ✗ n.s. |
+| Checkout Completion | 60.1% | 80.0% | **+19.9pp** | ✅ p < 0.001 |
 
-### Funnel stages
+**Verdict: Ship the variant.** The guardrail (AOV) held. Return rate was unchanged. Revenue per user up +28%.
+
+---
+
+## 📁 Repository Structure
+
 ```
-app_open → product_view → add_to_cart → checkout_start → payment_info → order_placed
+├── ab_test_checkout_analysis.ipynb   # Main analysis notebook
+├── data/
+│   ├── users.csv                     # 5,000 users — country, device, age group, user type
+│   ├── orders.csv                    # 3,310 orders — value, category, returns, AB group
+│   ├── funnel_events.csv             # 49,756 events — 6-stage funnel with time on stage
+│   └── ab_test_config.csv            # Test config — variant names, dates, target sample
+└── README.md
 ```
 
-### Key columns — funnel_events.csv
+---
+
+## 🔬 Analysis Structure
+
+The notebook is organised into 9 sections:
+
+1. **Context & Hypothesis** — test rationale, metrics definition, guardrail setup
+2. **Data Load & Validation** — null checks, date parsing, group balance sanity check
+3. **Full Funnel Walkthrough** — all 6 stages, session-based drop-off table + charts
+4. **Primary Metric — CVR** — user-level conversion rate, z-test for proportions, 95% CI
+5. **Secondary Metrics** — revenue per user, AOV t-test, return rate
+6. **Checkout Deep-Dive** — checkout_start → payment_info → order_placed completion rates
+7. **Segment Analysis** — CVR breakdown by device, country, and age group
+8. **Romania Flag** — anomaly detection: near-zero lift in RO, root cause hypotheses
+9. **Summary & Recommendation** — decision table, ship/hold rationale, next steps
+
+---
+
+## 📦 Data Dictionary
+
+### `users.csv`
+| Column | Type | Description |
+|---|---|---|
+| user_id | string | Unique user identifier |
+| country | string | DE, PL, CZ, SK, RO |
+| device | string | iOS or Android |
+| user_type | string | new or returning |
+| registration_date | date | Account creation date |
+| age_group | string | 18-24, 25-34, 35-44, 45-54, 55+ |
+
+### `orders.csv`
+| Column | Type | Description |
+|---|---|---|
+| order_id | string | Unique order identifier |
+| user_id | string | FK → users |
+| session_id | string | FK → funnel_events |
+| order_date | date | Date of purchase |
+| country / device | string | Market and device |
+| ab_group | string | control or variant |
+| category | string | Fashion, Electronics, Sports, Beauty, Home & Garden |
+| order_value_eur | float | Order value in EUR |
+| items_count | int | Number of items |
+| is_returned | int | 1 = returned, 0 = kept |
+
+### `funnel_events.csv`
+| Column | Type | Description |
+|---|---|---|
+| event_id | string | Unique event identifier |
+| session_id | string | Session grouping key |
+| user_id | string | FK → users |
+| stage | string | app_open → product_view → add_to_cart → checkout_start → payment_info → order_placed |
+| event_date | date | Date of event |
+| device / country | string | Market and device |
+| ab_group | string | control or variant |
+| time_on_stage_sec | int | Seconds spent on this stage |
+
+### `ab_test_config.csv`
 | Column | Description |
-|--------|-------------|
-| `session_id` | Unique session identifier |
-| `user_id` | User identifier (joins to users table) |
-| `stage` | Funnel stage name |
-| `ab_group` | `control` = 5-step checkout / `variant` = 2-step checkout |
-| `device` | Android or iOS |
-| `country` | DE, PL, CZ, SK, RO |
+|---|---|
+| ab_group | control or variant |
+| variant_name | Human-readable description |
+| launched_date / end_date | Test window |
+| sample_size_target | 10,000 per group |
 
 ---
 
-## Project steps
+## ⚙️ Setup & Usage
 
-### Step 1 — Load & inspect datasets
-```python
-users   = pd.read_csv('users.csv', parse_dates=['registration_date'])
-funnel  = pd.read_csv('funnel_events.csv', parse_dates=['event_date'])
-orders  = pd.read_csv('orders.csv', parse_dates=['order_date'])
-```
-
-### Step 2 — Overall funnel drop-off analysis
-```python
-STAGES = ['app_open','product_view','add_to_cart','checkout_start','payment_info','order_placed']
-stage_sessions = funnel.groupby('stage')['session_id'].nunique().reindex(STAGES)
-funnel_df['cvr_from_top']  = stage_sessions / stage_sessions.iloc[0] * 100
-funnel_df['step_drop_pct'] = funnel_df['sessions'].pct_change().abs() * 100
-```
-
-### Step 3 — Segment by device & country
-```python
-def conversion_rate(df, group_col):
-    top  = df[df['stage'] == 'app_open'].groupby(group_col)['session_id'].nunique()
-    conv = df[df['stage'] == 'order_placed'].groupby(group_col)['session_id'].nunique()
-    result = pd.DataFrame({'sessions': top, 'orders': conv}).fillna(0)
-    result['cvr_%'] = (result['orders'] / result['sessions'] * 100).round(2)
-    return result
-```
-
-### Step 4 — A/B test statistical significance (Chi-square)
-```python
-from scipy import stats
-contingency = np.array([[ctrl_converted, ctrl_dropped],
-                        [var_converted,  var_dropped]])
-chi2, p_value, dof, _ = stats.chi2_contingency(contingency)
-lift = (var_cvr - ctrl_cvr) / ctrl_cvr * 100
-```
-
-### Step 5 — 6-week post-purchase cohort retention
-```python
-first_order = orders.groupby('user_id')['order_date'].min().reset_index()
-orders_m = orders.merge(first_order, on='user_id')
-orders_m['weeks_since_first'] = (
-    (orders_m['order_date'] - orders_m['first_order_date']).dt.days // 7
-)
-cohort = orders_m.groupby('weeks_since_first')['user_id'].nunique()
-```
-
-### Step 6 — Key findings & recommendations
-
----
-
-## Results
-
-| Metric | Value |
-|--------|-------|
-| Biggest funnel drop-off | `add_to_cart` — 40.6% of sessions lost |
-| Overall app conversion rate | 19.0% (app open → order placed) |
-| iOS CVR | 20.1% |
-| Android CVR | 18.2% |
-| Control checkout CVR | 60.1% |
-| Variant checkout CVR | 80.0% |
-| A/B test lift | **+33.2%** |
-| Statistical significance | p < 0.0001 ✓ |
-| Best performing country | DE — 23.6% CVR |
-| Weakest performing country | SK — 11.1% CVR |
-| Reporting time saved | ~90% via automation |
-
----
-
-## Key recommendations
-
-1. **Roll out simplified 2-step checkout** to 100% of users — statistically significant +33.2% lift
-2. **Investigate Android-specific bugs** — 1.9pp gap vs iOS at scale affects thousands of sessions
-3. **Localise checkout experience for SK & RO** — converting at half the rate of DE
-4. **Launch post-purchase email campaign** — repeat purchase rate drops sharply after Week 1
-
----
-
-## How to run
+### Requirements
 
 ```bash
-# Install dependencies
-pip install pandas numpy matplotlib scipy
-
-# Run analysis
-python3 project_analysis.py
+Python 3.8+
+pandas
+numpy
+scipy
+matplotlib
 ```
 
-Place all 4 CSV files in the same directory as the script before running.
+### Run the notebook
+
+```bash
+# Clone the repo
+git clone https://github.com/your-username/ab-test-checkout-analysis.git
+cd ab-test-checkout-analysis
+
+# Install dependencies
+pip install pandas numpy scipy matplotlib jupyter
+
+# Launch notebook
+jupyter notebook ab_test_checkout_analysis.ipynb
+```
+
+> **Note:** The notebook reads CSV files from the same directory by default (`pd.read_csv('users.csv')`). Place the data files in the same folder as the notebook, or update the paths to match your local setup.
 
 ---
 
-## Skills demonstrated
+## 🧠 Statistical Methodology
 
-`Python` `Pandas` `NumPy` `Matplotlib` `SciPy` `A/B Testing` `Chi-square test` `Funnel Analysis` `Cohort Analysis` `Mobile App Analytics` `Statistical Significance` `Data Visualisation` `Stakeholder Reporting`
+- **Test type:** Two-proportion z-test for CVR (primary metric)
+- **Significance level:** α = 0.05
+- **Confidence intervals:** 95% (Wald method)
+- **AOV comparison:** Independent samples t-test (Welch)
+- **Return rate:** Two-proportion z-test
+- **Unit of analysis:** Unique users (not sessions), to avoid session-level inflation
+- **No statsmodels dependency** — all tests implemented with `scipy.stats` + manual proportion z-test
 
 ---
 
-*Project built as part of Data Analyst portfolio 
+## 🚨 Notable Finding — Romania
+
+Romania was the only market with near-zero lift (+0.3pp vs +9pp average elsewhere). The checkout sub-funnel shows the variant improved payment_info reach (73% → 81%) but the final order placement rate barely moved (58.8% → 65.1%). Hypotheses include a payment method mismatch, localisation gaps on the new screen, or a different customer profile. **Rollout to RO is on hold pending investigation.**
+
+---
+
+## 💡 Skills Demonstrated
+
+- A/B test design & statistical analysis
+- Funnel analytics & drop-off modelling
+- Segment analysis (device, geo, age cohort)
+- Anomaly detection & root cause framing
+- Product decision-making from data
+- Python (pandas, scipy, matplotlib)
+- Jupyter notebook storytelling
+
+---
+
+## 📬 Contact
+
+Built as part of a product analytics portfolio.  
+Feel free to open an issue or reach out with questions.
