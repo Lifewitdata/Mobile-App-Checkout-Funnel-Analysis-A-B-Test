@@ -1,7 +1,7 @@
 # Mobile-App-Checkout-Funnel-Analysis-A-B-Test
 > **Portfolio Project | Data Analyst 
 > Tools: Python · Pandas · NumPy · Matplotlib · SciPy  
-> Dataset: International Marketplace · Jun–Aug 2023
+> Dataset: International Marketplace 
 
 ---
 
