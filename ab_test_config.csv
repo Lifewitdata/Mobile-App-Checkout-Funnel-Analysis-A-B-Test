@@ -1,0 +1,3 @@
+ab_group,variant_name,launched_date,end_date,sample_size_target
+control,Standard checkout (5 steps),2023-06-01,2023-07-15,10000
+variant,Simplified checkout (2 steps),2023-06-01,2023-07-15,10000
